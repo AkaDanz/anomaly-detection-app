@@ -1,0 +1,16 @@
+# Node + Python project
+node_modules/
+dist/
+build/
+.env
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+venv/
+*.ipynb_checkpoints/
+
+# Vite/React
+.cache/
+*.log
