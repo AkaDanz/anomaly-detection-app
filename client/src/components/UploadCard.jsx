@@ -5,15 +5,21 @@ export default function UploadCard({ onUploadComplete }) {
   const [normalization, setNormalization] = useState('none');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isDragActive, setIsDragActive] = useState(false);
+
+  const supportedTypes = [
+    'text/csv',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ];
+  const supportedExts = ['.csv', '.xlsx', '.xls'];
 
   const handleFileChange = (e) => {
-    const supportedTypes = [
-      'text/csv',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel'
-    ];
-    const supportedExts = ['.csv', '.xlsx', '.xls'];
     const selected = Array.from(e.target.files);
+    processFiles(selected);
+  };
+
+  function processFiles(selected) {
     const valid = selected.filter(file => {
       const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
       return supportedTypes.includes(file.type) || supportedExts.includes(ext);
@@ -25,6 +31,28 @@ export default function UploadCard({ onUploadComplete }) {
       setError(null);
       setFiles(valid);
     }
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const dropped = Array.from(e.dataTransfer.files);
+      processFiles(dropped);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragActive) setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
   };
 
   const handleSubmit = async () => {
@@ -34,21 +62,17 @@ export default function UploadCard({ onUploadComplete }) {
     }
     setIsLoading(true);
     setError(null);
-
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
     formData.append('normalization', normalization);
-
     try {
       const response = await fetch('/upload', {
         method: 'POST',
         body: formData,
       });
-
       if (!response.ok) {
         throw new Error(`Upload failed with status ${response.status}`);
       }
-
       const data = await response.json();
       onUploadComplete(data);
     } catch (err) {
@@ -59,24 +83,39 @@ export default function UploadCard({ onUploadComplete }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 shadow rounded-lg p-6 space-y-4">
+    <div
+      className={`bg-white border border-gray-200 shadow rounded-lg p-6 space-y-4 transition-colors duration-200 ${
+        isDragActive ? 'ring-2 ring-blue-400 bg-blue-50/60 border-blue-400' : ''
+      } w-[130%] max-w-none`}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <h2 className="text-lg font-semibold text-gray-800">Upload Files</h2>
-
-      <input
-        type="file"
-        multiple
-        accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-        onChange={handleFileChange}
-        className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-      />
-
-      <div className="space-y-1">
-        <label htmlFor="normalization" className="block text-sm font-medium text-gray-700">
+      <div
+        className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-8 cursor-pointer transition-colors duration-200 ${
+          isDragActive ? 'border-blue-400 bg-blue-50/80' : 'border-gray-300 bg-gray-50'
+        }`}
+        onClick={() => document.getElementById('file-input').click()}
+      >
+        <span className={`text-gray-500 ${isDragActive ? 'text-blue-600' : ''}`}>{isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}</span>
+        <input
+          id="file-input"
+          type="file"
+          multiple
+          accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
+      <div className="space-y-1 w-full">
+        <label htmlFor="normalization" className="block text-sm font-medium text-gray-700 w-full">
           Normalization Method
         </label>
         <select
           id="normalization"
-          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          className="mt-1 block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm w-full"
           value={normalization}
           onChange={(e) => setNormalization(e.target.value)}
         >
@@ -85,7 +124,6 @@ export default function UploadCard({ onUploadComplete }) {
           <option value="minmax">Min-Max</option>
         </select>
       </div>
-
       <button
         onClick={handleSubmit}
         disabled={isLoading}
@@ -93,7 +131,11 @@ export default function UploadCard({ onUploadComplete }) {
       >
         {isLoading ? 'Uploading...' : 'Upload'}
       </button>
-
+      {files.length > 0 && (
+        <div className="text-xs text-gray-600">
+          {files.length} file{files.length > 1 ? 's' : ''} selected: {files.map(f => f.name).join(', ')}
+        </div>
+      )}
       {error && (
         <div className="text-sm text-red-600">{error}</div>
       )}
