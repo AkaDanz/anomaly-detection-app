@@ -65,25 +65,29 @@ export default function CumulativeAnomaliesChart({ records }) {
     scales: {
       x: {
         type: 'time',
-        title: {
-          display: true,
-          text: 'Timestamp',
+        time: {
+          unit: 'day',
+          displayFormats: {
+            day: 'MMM d',
+            hour: 'HH:mm',
+          },
+        },
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 6,
+          maxRotation: 0,
+          minRotation: 0,
+          font: { size: 10 },
+        },
+        grid: {
+          drawOnChartArea: true,
         },
       },
       y: {
         beginAtZero: true,
-        title: {
-          display: true,
-          text: 'Cumulative Count',
-        },
       },
     },
   };
 
-  return (
-    <div className="bg-white p-4 rounded shadow border h-[300px]">
-      <h3 className="text-md font-semibold text-gray-800 mb-2">Cumulative Anomaly Count</h3>
-      <Line data={data} options={options} />
-    </div>
-  );
+  return <Line data={data} options={options} />;
 }

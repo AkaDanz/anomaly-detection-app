@@ -1,7 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import classNames from 'classnames';
+import { useZThreshold } from '../context/ZThresholdContext.jsx';
+import InfoTooltip from './InfoTooltip';
 
-export default function TableView({ records, zThreshold }) {
+export default function TableView({ records, onFilteredRecordsChange }) {
+  // All hooks must be called unconditionally
+  const { zThreshold } = useZThreshold();
   const [sortKey, setSortKey] = useState('z_score');
   const [sortAsc, setSortAsc] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -11,11 +15,12 @@ export default function TableView({ records, zThreshold }) {
     setCurrentPage(1);
   }, [entriesPerPage]);
 
-  if (!records || records.length === 0) return null;
+  // Defensive: ensure records is always an array
+  const safeRecords = Array.isArray(records) ? records : [];
 
   // Sort by key
   const sortedRecords = useMemo(() => {
-    const sorted = [...records].sort((a, b) => {
+    const sorted = [...safeRecords].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
       if (aVal < bVal) return sortAsc ? -1 : 1;
@@ -28,7 +33,7 @@ export default function TableView({ records, zThreshold }) {
       const bAnomaly = typeof b.z_score === 'number' && Math.abs(b.z_score) > zThreshold;
       return bAnomaly - aAnomaly;
     });
-  }, [records, sortKey, sortAsc, zThreshold]);
+  }, [safeRecords, sortKey, sortAsc, zThreshold]);
 
   const headers = ['timestamp', 'value', 'z_score'];
 
@@ -36,6 +41,19 @@ export default function TableView({ records, zThreshold }) {
   const endIndex = startIndex + entriesPerPage;
   const paginatedRecords = sortedRecords.slice(startIndex, endIndex);
   const totalPages = Math.ceil(sortedRecords.length / entriesPerPage);
+
+  // Notify parent of currently visible records
+  useEffect(() => {
+    // Only call if the value actually changes
+    if (onFilteredRecordsChange) {
+      onFilteredRecordsChange(paginatedRecords);
+    }
+    // eslint-disable-next-line
+  }, [JSON.stringify(paginatedRecords), onFilteredRecordsChange]);
+
+  if (!records || records.length === 0) {
+    return null;
+  }
 
   const handleSort = (key) => {
     if (sortKey === key) {
@@ -49,7 +67,9 @@ export default function TableView({ records, zThreshold }) {
   return (
     <div className="bg-white p-4 mt-8 rounded shadow border">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-md font-semibold text-gray-800">Data Table</h3>
+        <h3 className="text-md font-semibold text-gray-800 flex items-center">Data Table
+          <InfoTooltip text="Displays your data with sorting and anomaly filtering. Anomalies are highlighted based on threshold." />
+        </h3>
         <div className="flex items-center gap-2 text-sm">
           <label htmlFor="entries">Show</label>
           <select
@@ -87,7 +107,8 @@ export default function TableView({ records, zThreshold }) {
                 <tr
                   key={i + startIndex}
                   className={classNames('border-t', {
-                    'bg-red-50': isAnomaly,
+                    'bg-red-50 text-red-600 font-medium': isAnomaly,
+                    'even:bg-gray-50': !isAnomaly,
                   })}
                 >
                   {headers.map((key) => (

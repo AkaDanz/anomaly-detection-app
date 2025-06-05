@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import InfoTooltip from './InfoTooltip';
 
 export default function UploadCard({ onUploadComplete }) {
   const [files, setFiles] = useState([]);
@@ -92,45 +93,48 @@ export default function UploadCard({ onUploadComplete }) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <h2 className="text-lg font-semibold text-gray-800">Upload Files</h2>
-      <div
-        className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-8 cursor-pointer transition-colors duration-200 ${
-          isDragActive ? 'border-blue-400 bg-blue-50/80' : 'border-gray-300 bg-gray-50'
-        }`}
-        onClick={() => document.getElementById('file-input').click()}
-      >
-        <span className={`text-gray-500 ${isDragActive ? 'text-blue-600' : ''}`}>{isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}</span>
-        <input
-          id="file-input"
-          type="file"
-          multiple
-          accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-      </div>
-      <div className="space-y-1 w-full">
-        <label htmlFor="normalization" className="block text-sm font-medium text-gray-700 w-full">
-          Normalization Method
-        </label>
-        <select
-          id="normalization"
-          className="mt-1 block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm w-full"
-          value={normalization}
-          onChange={(e) => setNormalization(e.target.value)}
+      <h2 className="text-lg font-semibold text-gray-800">Upload files or folders</h2>
+      <div className="flex flex-col gap-4 w-full">
+        {/* Upload area */}
+        <div className="w-full flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-8 cursor-pointer transition-colors duration-200"
+          onClick={() => document.getElementById('file-input').click()}
         >
-          <option value="none">None</option>
-          <option value="zscore">Z-score</option>
-          <option value="minmax">Min-Max</option>
-        </select>
+          <span className={`text-gray-500 ${isDragActive ? 'text-blue-600' : ''}`}>{isDragActive ? 'Drop files here...' : 'Drag & drop files here, or click to select'}</span>
+          <input
+            id="file-input"
+            type="file"
+            multiple
+            accept=".csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+        <div className="space-y-1 w-full">
+          <label htmlFor="normalization" className="block text-sm font-medium text-gray-700 w-full">
+            Normalization Method
+            <InfoTooltip text="Choose how to scale your data before anomaly detection. Z-score normalizes around mean; Min-Max scales between 0–1." />
+          </label>
+          <select
+            id="normalization"
+            className="mt-1 block border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm w-40"
+            value={normalization}
+            onChange={(e) => setNormalization(e.target.value)}
+          >
+            <option value="none">None</option>
+            <option value="zscore">Z-score</option>
+            <option value="minmax">Min-Max</option>
+          </select>
+        </div>
+        <div className="flex w-full justify-end">
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {isLoading ? 'Uploading...' : 'Upload'}
+          </button>
+        </div>
       </div>
-      <button
-        onClick={handleSubmit}
-        disabled={isLoading}
-        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition disabled:opacity-50"
-      >
-        {isLoading ? 'Uploading...' : 'Upload'}
-      </button>
       {files.length > 0 && (
         <div className="text-xs text-gray-600">
           {files.length} file{files.length > 1 ? 's' : ''} selected: {files.map(f => f.name).join(', ')}

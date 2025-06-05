@@ -8,10 +8,12 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { useZThreshold } from '../context/ZThresholdContext.jsx';
 
 ChartJS.register(BarElement, LinearScale, CategoryScale, Tooltip, Legend);
 
-export default function ZScoreHistogram({ records, zThreshold }) {
+export default function ZScoreHistogram({ records }) {
+  const { zThreshold } = useZThreshold();
   if (!records || records.length === 0) return null;
 
   // Bin settings
@@ -61,19 +63,23 @@ export default function ZScoreHistogram({ records, zThreshold }) {
     },
     scales: {
       x: {
-        title: { display: true, text: 'Z-Score Range' },
+        type: 'category', // keep as category for histogram bins
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 6,
+          maxRotation: 0,
+          minRotation: 0,
+          font: { size: 10 },
+        },
+        grid: {
+          drawOnChartArea: true,
+        },
       },
       y: {
         beginAtZero: true,
-        title: { display: true, text: 'Count' },
       },
     },
   };
 
-  return (
-    <div className="bg-white p-4 rounded shadow border h-[300px]">
-      <h3 className="text-md font-semibold text-gray-800 mb-2">Z-Score Histogram</h3>
-      <Bar data={data} options={options} />
-    </div>
-  );
+  return <Bar data={data} options={options} />;
 }
